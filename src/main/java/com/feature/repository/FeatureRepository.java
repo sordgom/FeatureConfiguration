@@ -25,4 +25,5 @@ public interface FeatureRepository extends JpaRepository<FeatureEntity, Long> {
     List<UserFeature> getFeaturesByEmailAndFeatureName(String feature, String email);
 
     FeatureEntity findByFeatureName(String featureName);
+    boolean existsByFeatureName(String featureName);
 }

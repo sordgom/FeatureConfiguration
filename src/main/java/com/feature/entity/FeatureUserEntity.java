@@ -3,6 +3,8 @@ package com.feature.entity;
 import jakarta.persistence.*;
 
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.Id;
 
 import java.io.Serializable;
@@ -15,10 +17,12 @@ public class FeatureUserEntity {
     @EmbeddedId
     private FeatureUser id;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "last_modified", insertable = false, updatable = false)
+    @UpdateTimestamp
+    @Column(name = "last_modified")
     private LocalDateTime updatedAt;
 
     @Data

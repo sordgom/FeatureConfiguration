@@ -2,6 +2,9 @@ package com.feature.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 
 @Data
@@ -14,11 +17,14 @@ public class FeatureEntity {
 
     private String featureName;
 
+    // isEnabled controls the feature for all users
     private boolean isEnabled;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "last_modified", insertable = false, updatable = false)
+    @UpdateTimestamp
+    @Column(name = "last_modified")
     private LocalDateTime updatedAt;
 }

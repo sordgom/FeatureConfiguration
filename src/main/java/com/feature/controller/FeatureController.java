@@ -4,6 +4,7 @@ import com.feature.domain.FeatureAccessResponse;
 import com.feature.domain.FeatureRequest;
 import com.feature.service.FeatureService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,8 +22,7 @@ public class FeatureController {
     }
 
     @PostMapping("/feature")
-    public void createFeature(@RequestBody FeatureRequest request){
-        service.createFeature(request);
+    public ResponseEntity<String> createFeature(@RequestBody FeatureRequest request){
+        return service.createFeature(request);
     }
-
 }

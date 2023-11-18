@@ -10,7 +10,12 @@ import com.feature.repository.FeatureUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -23,40 +28,59 @@ public class FeatureServiceImpl implements  FeatureService{
     private final FeatureUserRepository featureUserRepository;
     @Override
     public FeatureAccessResponse getFeatureByEmailAndFeatureName(String email, String featureName){
-        List<UserFeature> entities = featureRepository.getFeaturesByEmailAndFeatureName(featureName, email);
-        if(!CollectionUtils.isEmpty(entities)){
-            return new FeatureAccessResponse(true);
+        if(Objects.isNull(email) || Objects.isNull(featureName)){
+            log.debug("Email or featureName is empty");
+            return new FeatureAccessResponse(false);
         }
-        return new FeatureAccessResponse(false);
+        // Check if the feature exists or is enabled
+        FeatureEntity entity = featureRepository.findByFeatureName(featureName);
+        if(entity == null || !entity.isEnabled() ){
+            log.debug("Feature not enabled");
+            return new FeatureAccessResponse(false);
+        }
+
+        boolean canAccess = featureUserRepository.existsById_EmailAndId_Feature_FeatureName(email, featureName);
+        return new FeatureAccessResponse(canAccess);
     }
 
+    // I'm not sure if the assessment requires an update of data or is it insert only because I believe a PATCH endpoint suits better
+    @Transactional
     @Override
-    public void createFeature(FeatureRequest request){
-        log.debug("Create a new feature whitelisted by user email");
+        public ResponseEntity<String> createFeature(FeatureRequest request) {
+        log.debug("Creating a new feature whitelisted by user email");
+        try {
+            // Sanitization checks
+            if (StringUtils.isEmpty(request.getFeatureName()) || StringUtils.isEmpty(request.getEmail())) {
+                log.debug("Invalid request: FeatureName or Email is empty");
+                return ResponseEntity.status(HttpStatus.NOT_MODIFIED).body("Data not modified");
+            }
 
-        // Check if the feature already exists
-        FeatureEntity feature = featureRepository.findByFeatureName(request.getFeatureName());
-        if( Objects.nonNull(feature) ){
-            log.debug("Feature already exists in the db");
-            return;
-        }
-        // Save feature
-        try{
-            FeatureEntity entity = new FeatureEntity();
-            entity.setFeatureName(request.getFeatureName());
-            entity.setEnabled(request.getEnable());
-            featureRepository.save(entity);
+            FeatureEntity featureEntity = featureRepository.findByFeatureName(request.getFeatureName());
+            if (featureEntity != null) {
+                // Feature exists, update isEnabled
+                featureEntity.setEnabled(request.getEnable());
+            } else {
+                // Feature doesn't exist, create a new one
+                featureEntity = new FeatureEntity();
+                featureEntity.setFeatureName(request.getFeatureName());
+                featureEntity.setEnabled(request.getEnable());
+            }
+            featureRepository.save(featureEntity);
+            log.debug("Feature created successfully");
 
             // Save whitelisted user
+            FeatureUserEntity featureUserEntity = new FeatureUserEntity();
             FeatureUserEntity.FeatureUser user = new FeatureUserEntity.FeatureUser();
             user.setEmail(request.getEmail());
-            user.setFeature(entity);
-            FeatureUserEntity userEntity = new FeatureUserEntity();
-            userEntity.setId(user);
-            featureUserRepository.save(userEntity);
+            user.setFeature(featureEntity);
+            featureUserEntity.setId(user);
 
-        } catch (Error e) {
-            log.error(String.valueOf(e));
+            featureUserRepository.save(featureUserEntity);
+
+            return ResponseEntity.ok("Feature created successfully");
+        } catch (Exception e) {
+            log.error("Error creating feature", e);
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).body("Data not modified");
         }
     }
 }
