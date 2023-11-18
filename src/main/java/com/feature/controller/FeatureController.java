@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class FeatureController {
 
     private final FeatureService service;
+
     @GetMapping("/feature")
     public FeatureAccessResponse GetFeature(
             @RequestParam(value="email") String email,
